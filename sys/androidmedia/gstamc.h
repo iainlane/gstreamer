@@ -25,6 +25,8 @@
 #include <gst/video/video.h>
 #include <gst/audio/audio.h>
 #include <jni.h>
+#include <media_codec_layer.h>
+#include <media_format_layer.h>
 
 G_BEGIN_DECLS
 
@@ -64,11 +66,14 @@ struct _GstAmcBuffer {
 struct _GstAmcFormat {
   /* < private > */
   jobject object; /* global reference */
+  MediaFormat format;
 };
 
 struct _GstAmcCodec {
   /* < private > */
   jobject object; /* global reference */
+  MediaCodecDelegate *codec_delegate;
+  guint texture_id;
 };
 
 struct _GstAmcBufferInfo {
@@ -83,7 +88,12 @@ extern GQuark gst_amc_codec_info_quark;
 GstAmcCodec * gst_amc_codec_new (const gchar *name);
 void gst_amc_codec_free (GstAmcCodec * codec);
 
+#ifdef HAVE_ANDROID_MEDIA_HYBRIS
+gboolean gst_amc_codec_configure (GstAmcCodec * codec, GstAmcFormat * format, SurfaceTextureClientHybris stc, gint flags);
+#else
 gboolean gst_amc_codec_configure (GstAmcCodec * codec, GstAmcFormat * format, gint flags);
+#endif
+gboolean gst_amc_codec_queue_csd (GstAmcCodec * codec, GstAmcFormat * format);
 GstAmcFormat * gst_amc_codec_get_output_format (GstAmcCodec * codec);
 
 gboolean gst_amc_codec_start (GstAmcCodec * codec);

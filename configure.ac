@@ -837,13 +837,18 @@ translit(dnm, m, l) AM_CONDITIONAL(USE_ANDROID_MEDIA, true)
 HAVE_ANDROID_MEDIA="no"
 AG_GST_CHECK_FEATURE(ANDROID_MEDIA, [Android Media], androidmedia, [
   case "$host" in
-    *android*)
-      AC_CHECK_HEADER(jni.h, HAVE_ANDROID_MEDIA="yes", HAVE_ANDROID_MEDIA="no")
-      ;;
     *)
-      HAVE_ANDROID_MEDIA="no"
+      HAVE_ANDROID_MEDIA="yes"
       ;;
   esac
+])
+
+dnl *** A Hybris-based Platform ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_ANDROID_MEDIA_HYBRIS, true)
+HAVE_ANDROID_MEDIA_HYBRIS="no"
+dnl Check for the presence of Hybris (Ubuntu Touch)
+AG_GST_CHECK_FEATURE(ANDROID_MEDIA_HYBRIS, [Android Media Hybris], androidmediahybris, [
+  AC_CHECK_HEADER(ubuntu/application/ui/window.h, HAVE_ANDROID_MEDIA_HYBRIS="yes", HAVE_ANDROID_MEDIA_HYBRIS="no")
 ])
 
 dnl *** AppleMedia (OS X and iOS) ***
@@ -1241,6 +1246,25 @@ AG_GST_CHECK_FEATURE(WAYLAND, [wayland sink], wayland , [
     HAVE_WAYLAND="yes" ], [ HAVE_WAYLAND="no"
   ])
 ])
+
+dnl **** Mir ****
+# FIXME: Fix this to check for Mir once Mir actually lands
+translit(dnm, m, l) AM_CONDITIONAL(USE_MIR, true)
+AG_GST_CHECK_FEATURE(MIR, [mir sink], mir , [
+  PKG_CHECK_MODULES(MIR, wayland-client >= 1.0.0, [
+    HAVE_MIR="yes" ], [ HAVE_MIR="no"
+  ])
+])
+
+dnl **** libgstmir ****
+# FIXME: Fix this to check for Mir once Mir actually lands
+#translit(dnm, m, l) AM_CONDITIONAL(USE_MIR_ALLOC, true)
+#AG_GST_CHECK_FEATURE(MIRALLOC, [miralloc], mirlloc , [
+#  PKG_CHECK_MODULES(MIRALLOC, wayland-client >= 1.0.0, [
+#    HAVE_MIR_ALLOC="yes" ], [ HAVE_MIR_ALLOC="no"
+#  ])
+#])
+AM_CONDITIONAL(HAVE_MIR_ALLOC, test x"$HAVE_MIR_ALLOC" = x"yes")
 
 dnl **** Dirac ****
 translit(dnm, m, l) AM_CONDITIONAL(USE_DIRAC, true)
@@ -2193,6 +2217,8 @@ AM_CONDITIONAL(USE_DECKLINK, false)
 AM_CONDITIONAL(DECKLINK_OSX, false)
 AM_CONDITIONAL(USE_DIRECTFB, false)
 AM_CONDITIONAL(USE_WAYLAND, false)
+AM_CONDITIONAL(USE_MIR, false)
+#AM_CONDITIONAL(USE_MIR_ALLOC, false)
 AM_CONDITIONAL(USE_DIRAC, false)
 AM_CONDITIONAL(USE_DTS, false)
 AM_CONDITIONAL(USE_EXIF, false)
@@ -2400,6 +2426,7 @@ gst-libs/Makefile
 gst-libs/gst/Makefile
 gst-libs/gst/basecamerabinsrc/Makefile
 gst-libs/gst/egl/Makefile
+gst-libs/gst/mir/Makefile
 gst-libs/gst/insertbin/Makefile
 gst-libs/gst/interfaces/Makefile
 gst-libs/gst/signalprocessor/Makefile
@@ -2457,6 +2484,8 @@ ext/dc1394/Makefile
 ext/dirac/Makefile
 ext/directfb/Makefile
 ext/wayland/Makefile
+ext/mir/Makefile
+ext/miralloc/Makefile
 ext/dts/Makefile
 ext/eglgles/Makefile
 ext/faac/Makefile
