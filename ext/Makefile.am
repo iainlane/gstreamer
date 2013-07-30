@@ -76,6 +76,12 @@ else
 DAALA_DIR=
 endif
 
+if USE_MIR
+MIR_DIR=mir
+else
+MIR_DIR=
+endif
+
 if USE_DTS
 DTS_DIR=dts
 else
@@ -452,6 +458,7 @@ DIST_SUBDIRS = \
 	dc1394 \
 	directfb \
 	wayland \
+	mir \
 	faac \
 	faad \
 	flite \

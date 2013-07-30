@@ -10,6 +10,12 @@ else
 ANDROID_MEDIA_DIR=
 endif
 
+if USE_ANDROID_MEDIA_HYBRIS
+ANDROID_MEDIA_DIR=androidmedia
+else
+ANDROID_MEDIA_DIR=
+endif
+
 if USE_APPLE_MEDIA
 APPLE_MEDIA_DIR=applemedia applemedia-nonpublic
 else

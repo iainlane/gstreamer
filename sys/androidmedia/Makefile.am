@@ -1,9 +1,16 @@
 plugin_LTLIBRARIES = libgstandroidmedia.la
 
+if USE_ANDROID_MEDIA_HYBRIS
+libgstandroidmedia_la_SOURCES = \
+	gstamchybris.c \
+	gstamcaudiodechybris.c \
+	gstamcvideodechybris.c
+else
 libgstandroidmedia_la_SOURCES = \
 	gstamc.c \
 	gstamcaudiodec.c \
 	gstamcvideodec.c
+endif
 
 noinst_HEADERS = \
 	gstamc.h \
@@ -23,7 +30,9 @@ libgstandroidmedia_la_LIBADD = \
 	-lgstvideo-@GST_API_VERSION@ \
 	$(GST_BASE_LIBS) \
 	$(GST_LIBS) \
-	$(ORC_LIBS)
+	$(ORC_LIBS) \
+    -lgstmiralloc-$(GST_API_VERSION) \
+	-lmedia
 libgstandroidmedia_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 libgstandroidmedia_la_LIBTOOLFLAGS = $(GST_PLUGIN_LIBTOOLFLAGS)
 
@@ -34,7 +43,7 @@ Android.mk: Makefile.am $(BUILT_SOURCES)
          -:REL_TOP $(top_srcdir) -:ABS_TOP $(abs_top_srcdir) \
 	 -:SOURCES $(libgstandroidmedia_la_SOURCES) \
 	           $(nodist_libgstandroidmedia_la_SOURCES) \
-	 -:CFLAGS $(DEFS) $(DEFAULT_INCLUDES) $(libgstandroidmedia_la_CFLAGS) \
+	 -:CPPFLAGS $(DEFS) $(DEFAULT_INCLUDES) $(libgstandroidmedia_la_CFLAGS) \
 	 -:LDFLAGS $(libgstandroidmedia_la_LDFLAGS) \
 	           $(libgstandroidmedia_la_LIBADD) \
 	           -ldl \
