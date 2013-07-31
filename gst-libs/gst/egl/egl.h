@@ -27,6 +27,8 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+G_BEGIN_DECLS
+
 #define GST_EGL_IMAGE_MEMORY_TYPE "EGLImage"
 
 #define GST_CAPS_FEATURE_MEMORY_EGL_IMAGE "memory:EGLImage"
@@ -63,9 +65,10 @@ gboolean gst_context_get_egl_display (GstContext * context,
 #define GST_TYPE_EGL_DISPLAY (gst_egl_display_get_type())
 GType gst_egl_display_get_type (void);
 
-GstEGLDisplay *gst_egl_display_new (EGLDisplay display);
+GstEGLDisplay *gst_egl_display_new (EGLDisplay display, GDestroyNotify destroy_notify);
 GstEGLDisplay *gst_egl_display_ref (GstEGLDisplay * display);
 void gst_egl_display_unref (GstEGLDisplay * display);
 EGLDisplay gst_egl_display_get (GstEGLDisplay * display);
 
+G_END_DECLS
 #endif /* __GST_EGL_H__ */

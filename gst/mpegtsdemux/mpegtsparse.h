@@ -48,10 +48,16 @@ typedef struct _MpegTSParse2Class MpegTSParse2Class;
 struct _MpegTSParse2 {
   MpegTSBase parent;
 
+  gboolean have_group_id;
+  guint group_id;
+
   /* Always present source pad */
   GstPad *srcpad;
 
   GList *srcpads;
+
+  /* state */
+  gboolean first;
 };
 
 struct _MpegTSParse2Class {

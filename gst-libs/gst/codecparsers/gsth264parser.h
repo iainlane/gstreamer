@@ -49,6 +49,7 @@ G_BEGIN_DECLS
 #define GST_H264_IS_SI_SLICE(slice) (((slice)->type % 5) == GST_H264_SI_SLICE)
 
 /**
+ * GstH264Profile:
  * @GST_H264_PROFILE_BASELINE: Baseline profile (A.2.1)
  * @GST_H264_PROFILE_MAIN: Main profile (A.2.2)
  * @GST_H264_PROFILE_EXTENDED: Extended profile (A.2.3)
@@ -466,12 +467,14 @@ struct _GstH264SPS
 
   guint8 vui_parameters_present_flag;
   /* if vui_parameters_present_flag */
- GstH264VUIParams vui_parameters;
+  GstH264VUIParams vui_parameters;
 
   /* calculated values */
   guint8 chroma_array_type;
   guint32 max_frame_num;
   gint width, height;
+  gint crop_rect_width, crop_rect_height;
+  gint crop_rect_x, crop_rect_y;
   gint fps_num, fps_den;
   gboolean valid;
 };

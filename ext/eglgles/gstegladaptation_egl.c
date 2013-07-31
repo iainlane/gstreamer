@@ -106,6 +106,7 @@ got_egl_error (const char *wtf)
 void
 gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx)
 {
+#ifndef GST_DISABLE_GST_DEBUG
   const char *eglexts;
   unsigned const char *glexts;
 
@@ -116,7 +117,7 @@ gst_egl_adaptation_init_egl_exts (GstEglAdaptationContext * ctx)
       GST_STR_NULL (eglexts));
   GST_DEBUG_OBJECT (ctx->element, "Available GLES extensions: %s\n",
       GST_STR_NULL ((const char *) glexts));
-
+#endif
   return;
 }
 
@@ -131,15 +132,6 @@ gst_egl_adaptation_init_egl_display (GstEglAdaptationContext * ctx)
     GST_ERROR_OBJECT (ctx->element, "Couldn't init EGL platform wrapper");
     goto HANDLE_ERROR;
   }
-#ifdef USE_EGL_RPI
-  /* See https://github.com/raspberrypi/firmware/issues/99 */
-  if (!eglMakeCurrent ((EGLDisplay) 1, EGL_NO_SURFACE, EGL_NO_SURFACE,
-          EGL_NO_CONTEXT)) {
-    got_egl_error ("eglMakeCurrent");
-    GST_ERROR_OBJECT (ctx->element, "Couldn't unbind context");
-    return FALSE;
-  }
-#endif
 
   msg = gst_message_new_need_context (GST_OBJECT_CAST (ctx->element));
   gst_message_add_context_type (msg, GST_EGL_DISPLAY_CONTEXT_TYPE);
@@ -168,7 +160,7 @@ gst_egl_adaptation_init_egl_display (GstEglAdaptationContext * ctx)
       GST_ERROR_OBJECT (ctx->element, "Could not get EGL display connection");
       goto HANDLE_ERROR;        /* No EGL error is set by eglGetDisplay() */
     }
-    ctx->display = gst_egl_display_new (display);
+    ctx->display = gst_egl_display_new (display, (GDestroyNotify) eglTerminate);
 
     context = gst_context_new ();
     gst_context_set_egl_display (context, ctx->display);

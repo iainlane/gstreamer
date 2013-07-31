@@ -3,7 +3,7 @@ AC_PREREQ([2.68])
 dnl initialize autoconf
 dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, cvs and prerelease does Werror too
-AC_INIT([GStreamer Bad Plug-ins],[1.1.0.1],[http://bugzilla.gnome.org/enter_bug.cgi?product=GStreamer],[gst-plugins-bad])
+AC_INIT([GStreamer Bad Plug-ins],[1.1.3.1],[http://bugzilla.gnome.org/enter_bug.cgi?product=GStreamer],[gst-plugins-bad])
 
 AG_GST_INIT
 
@@ -48,11 +48,11 @@ dnl - interfaces added/removed/changed -> increment CURRENT, REVISION = 0
 dnl - interfaces added -> increment AGE
 dnl - interfaces removed -> AGE = 0
 dnl sets GST_LT_LDFLAGS
-AS_LIBTOOL(GST, 2, 0, 2)
+AS_LIBTOOL(GST, 103, 0, 103)
 
 dnl *** required versions of GStreamer stuff ***
-GST_REQ=1.1.0.1
-GSTPB_REQ=1.1.0
+GST_REQ=1.1.3.1
+GSTPB_REQ=1.1.3.1
 
 dnl *** autotools stuff ****
 
@@ -339,16 +339,15 @@ dnl Make sure you have a space before and after all plugins
 GST_PLUGINS_NONPORTED=" cdxaparse \
  dccp faceoverlay \
  hdvparse ivfparse jp2kdecimator \
- librfb \
- mve mythtv nsf nuvdemux \
+ mve mythtv nuvdemux \
  patchdetect real \
  sdi stereo tta \
  videomeasure videosignal vmnc \
  linsys vcd \
- apexsink cdaudio dc1394 dirac directfb \
- gsettings ladspa \
- musepack musicbrainz nas neon ofa openal sdl sndfile timidity \
- directdraw direct3d9 acm wininet \
+ apexsink cdaudio dc1394 directfb \
+ gsettings \
+ musepack nas sdl sndfile timidity \
+ directdraw acm wininet \
  xvid lv2 teletextdec sndio osx_video quicktime"
 AC_SUBST(GST_PLUGINS_NONPORTED)
 
@@ -358,6 +357,7 @@ AG_GST_CHECK_PLUGIN(adpcmdec)
 AG_GST_CHECK_PLUGIN(adpcmenc)
 AG_GST_CHECK_PLUGIN(aiff)
 AG_GST_CHECK_PLUGIN(asfmux)
+AG_GST_CHECK_PLUGIN(audiofxbad)
 AG_GST_CHECK_PLUGIN(audiovisualizers)
 AG_GST_CHECK_PLUGIN(autoconvert)
 AG_GST_CHECK_PLUGIN(bayer)
@@ -394,7 +394,6 @@ AG_GST_CHECK_PLUGIN(mpegtsmux)
 AG_GST_CHECK_PLUGIN(mpegpsmux)
 AG_GST_CHECK_PLUGIN(mve)
 AG_GST_CHECK_PLUGIN(mxf)
-AG_GST_CHECK_PLUGIN(nsf)
 AG_GST_CHECK_PLUGIN(nuvdemux)
 AG_GST_CHECK_PLUGIN(patchdetect)
 AG_GST_CHECK_PLUGIN(pcapparse)
@@ -428,7 +427,7 @@ if test "x$HAVE_CPU_I386" != "xyes" && test "x$HAVE_CPU_X86_64" != "xyes"; then
 fi
 
 dnl disable gst plugins we might not be able to build on this
-dnl platform: librfb (ugly but minimally invasive)
+dnl platform: (ugly but minimally invasive)
 dnl FIXME: maybe move to sys, or make work with winsock2
 AC_CHECK_HEADERS([sys/socket.h], HAVE_SYS_SOCKET_H=yes)
 AC_CHECK_HEADERS([winsock2.h], HAVE_WINSOCK2_H=yes)
@@ -758,36 +757,35 @@ AG_GST_CHECK_FEATURE(DIRECTDRAW, [DirectDraw plug-in], directdrawsink, [
   AC_SUBST(HAVE_DIRECTDRAW)
 ])
 
-dnl Direct3D9
-AM_CONDITIONAL(USE_DIRECT3D9, true)
-AG_GST_CHECK_FEATURE(DIRECT3D9, [Direct3D9], winscreencap, [
-  HAVE_DIRECT3D9="no"
+dnl winscreencap
+translit(dnm, m, l) AM_CONDITIONAL(USE_WINSCREENCAP, true)
+AG_GST_CHECK_FEATURE(WINSCREENCAP, [winscreencap plug-in], winscreencap, [
+  HAVE_WINSCREENCAP="no"
   save_CFLAGS="$CFLAGS"
   save_LDFLAGS="$LDFLAGS"
   save_LIBS="$LIBS"
   CFLAGS="$CFLAGS $DIRECTX_CFLAGS"
   LDFLAGS="$LDFLAGS $DIRECTX_LDFLAGS"
   LIBS="$LIBS -ld3d9 -lgdi32"
-  AC_MSG_CHECKING(for Direct3D9 LDFLAGS)
+  AC_MSG_CHECKING(for Direct3D LDFLAGS)
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <windows.h>
 #include <d3d9.h>
 ]], [[
   Direct3DCreate9(D3D_SDK_VERSION);
 ]])],
-    [HAVE_DIRECT3D9="yes"],
-    [HAVE_DIRECT3D9="no"])
-  AC_MSG_RESULT($HAVE_DIRECT3D9)
+    [HAVE_WINSCREENCAP="yes"],
+    [HAVE_WINSCREENCAP="no"])
+  AC_MSG_RESULT($HAVE_WINSCREENCAP)
   CFLAGS=$save_CFLAGS
   LDFLAGS=$save_LDFLAGS
   LIBS=$save_LIBS
 
-  if test "x$HAVE_DIRECT3D9" = "xyes";  then
-
-    DIRECT3D9_LIBS="-ld3d9 -lgdi32"
-    AC_SUBST(DIRECT3D9_LIBS)
+  if test "x$HAVE_WINSCREENCAP" = "xyes";  then
+    WINSCREENCAP_LIBS="-ld3d9 -lgdi32"
+    AC_SUBST(WINSCREENCAP_LIBS)
   fi
-  AC_SUBST(HAVE_DIRECT3D9)
+  AC_SUBST(HAVE_WINSCREENCAP)
 ])
 
 dnl DirectShow
@@ -1117,40 +1115,6 @@ AG_GST_CHECK_FEATURE(CDAUDIO, [cdaudio], cdaudio, [
   AC_SUBST(CDAUDIO_LIBS)
 ])
 
-dnl *** celt ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_CELT, true)
-AG_GST_CHECK_FEATURE(CELT, [celt], celt, [
-  PKG_CHECK_MODULES(CELT, celt >= 0.5.0, [
-          AC_DEFINE([HAVE_CELT], 1, [Define if libcelt 0.5 is installed])
-          HAVE_CELT="yes"
-  ], [
-          HAVE_CELT="no"
-  ])
-
-  PKG_CHECK_MODULES(CELT_0_7, celt >= 0.7.0, [
-          AC_DEFINE([HAVE_CELT_0_7], 1, [Define if libcelt 0.7 is installed])
-  ], [
-          dnl to prevent an error
-          true
-  ])
-
-  PKG_CHECK_MODULES(CELT_0_8, celt >= 0.8.0, [
-          AC_DEFINE([HAVE_CELT_0_8], 1, [Define if libcelt 0.8 is installed])
-  ], [
-          dnl to prevent an error
-          true
-  ])
-
-  PKG_CHECK_MODULES(CELT_0_11, celt >= 0.11.0, [
-          AC_DEFINE([HAVE_CELT_0_11], 1, [Define if libcelt 0.11 is installed])
-  ], [
-          dnl to prevent an error
-          true
-  ])
-  AC_SUBST(CELT_CFLAGS)
-  AC_SUBST(CELT_LIBS)
-])
-
 dnl *** chromaprint ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_CHROMAPRINT, true)
 AG_GST_CHECK_FEATURE(CHROMAPRINT, [chromaprint], chromaprint, [
@@ -1176,6 +1140,16 @@ AG_GST_CHECK_FEATURE(CURL, [Curl plugin], curl, [
   ])
   AC_SUBST(CURL_CFLAGS)
   AC_SUBST(CURL_LIBS)
+])
+
+dnl **** DASH ****
+translit(dnm, m, l) AM_CONDITIONAL(USE_DASH, true)
+AG_GST_CHECK_FEATURE(DASH, [DASH plug-in], dash, [
+  PKG_CHECK_MODULES(LIBXML2, libxml-2.0 >= 2.4, [HAVE_LIBXML2="yes"
+    HAVE_DASH="yes"], [HAVE_LIBXML2="no"
+    HAVE_DASH="no"])
+  AC_SUBST(LIBXML2_CFLAGS)
+  AC_SUBST(LIBXML2_LIBS)
 ])
 
 dnl *** dc1394  ***
@@ -1257,13 +1231,6 @@ AG_GST_CHECK_FEATURE(MIR, [mir sink], mir , [
 ])
 
 dnl **** libgstmir ****
-# FIXME: Fix this to check for Mir once Mir actually lands
-#translit(dnm, m, l) AM_CONDITIONAL(USE_MIR_ALLOC, true)
-#AG_GST_CHECK_FEATURE(MIRALLOC, [miralloc], mirlloc , [
-#  PKG_CHECK_MODULES(MIRALLOC, wayland-client >= 1.0.0, [
-#    HAVE_MIR_ALLOC="yes" ], [ HAVE_MIR_ALLOC="no"
-#  ])
-#])
 AM_CONDITIONAL(HAVE_MIR_ALLOC, test x"$HAVE_MIR_ALLOC" = x"yes")
 
 dnl **** Dirac ****
@@ -1272,6 +1239,20 @@ AG_GST_CHECK_FEATURE(DIRAC, [dirac], dirac, [
   PKG_CHECK_MODULES(DIRAC, dirac >= 0.10, HAVE_DIRAC="yes", [
     HAVE_DIRAC="no"
   ])
+])
+
+dnl *** Daala ***
+translit(dnm, m, l) AM_CONDITIONAL(USE_DAALA, true)
+AG_GST_CHECK_FEATURE(DAALA, [daala], daala, [
+  if test "x$BUILD_EXPERIMENTAL" = "xyes"; then
+    PKG_CHECK_MODULES(DAALA, daalaenc daaladec, [
+            HAVE_DAALA="yes"
+    ], [
+            HAVE_DAALA="no"
+    ])
+    AC_SUBST(DAALA_CFLAGS)
+    AC_SUBST(DAALA_LIBS)
+  fi
 ])
 
 dnl *** DTS ***
@@ -1703,14 +1684,6 @@ AG_GST_CHECK_FEATURE(MUSEPACK, [musepackdec], musepack, [
     ], [HAVE_MUSEPACK="no"])])
 ])
 
-dnl *** musicbrainz ***
-translit(dnm, m, l) AM_CONDITIONAL(USE_MUSICBRAINZ, true)
-AG_GST_CHECK_FEATURE(MUSICBRAINZ, [musicbrainz tag generation], musicbrainz, [
-  PKG_CHECK_MODULES(MUSICBRAINZ, libmusicbrainz >= 2.1.0, HAVE_MUSICBRAINZ="yes", HAVE_MUSICBRAINZ="no")
-  AC_SUBST(MUSICBRAINZ_CFLAGS)
-  AC_SUBST(MUSICBRAINZ_LIBS)
-])
-
 dnl *** MythTV ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_MYTHTV, true)
 AG_GST_CHECK_FEATURE(MYTHTV, [MythTV client plugins], mythtvsrc, [
@@ -1760,7 +1733,7 @@ AG_GST_CHECK_FEATURE(OFA, [ofa plugins], ofa, [
 dnl *** OpenAL ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_OPENAL, true)
 AG_GST_CHECK_FEATURE(OPENAL, [OpenAL plugin], openal, [
-  PKG_CHECK_MODULES(OPENAL, openal, HAVE_OPENAL="yes", [
+  PKG_CHECK_MODULES(OPENAL, openal >= 1.14, HAVE_OPENAL="yes", [
     HAVE_OPENAL="no"
   ])
   AC_SUBST(OPENAL_CFLAGS)
@@ -1948,6 +1921,18 @@ dnl *** SDL ***
 translit(dnm, m, l) AM_CONDITIONAL(USE_SDL, true)
 AG_GST_CHECK_FEATURE(SDL, [SDL plug-in], sdlvideosink sdlaudiosink, [
     AM_PATH_SDL(, HAVE_SDL=yes, HAVE_SDL=no)
+])
+
+dnl **** Smooth Streaming ****
+translit(dnm, m, l) AM_CONDITIONAL(USE_SMOOTHSTREAMING, true)
+AG_GST_CHECK_FEATURE(SMOOTHSTREAMING, [Smooth Streaming plug-in], smoothstreaming, [
+  PKG_CHECK_MODULES(LIBXML2, libxml-2.0 >= 2.4,
+    [HAVE_LIBXML2="yes"
+     HAVE_SMOOTHSTREAMING="yes"],
+    [HAVE_LIBXML2="no"
+     HAVE_SMOOTHSTREAMING="no"])
+  AC_SUBST(LIBXML2_CFLAGS)
+  AC_SUBST(LIBXML2_LIBS)
 ])
 
 dnl *** sndfile ***
@@ -2209,9 +2194,9 @@ AM_CONDITIONAL(USE_VOAACENC, false)
 AM_CONDITIONAL(USE_APEXSINK, false)
 AM_CONDITIONAL(USE_BZ2, false)
 AM_CONDITIONAL(USE_CDAUDIO, false)
-AM_CONDITIONAL(USE_CELT, false)
 AM_CONDITIONAL(USE_CHROMAPRINT, false)
 AM_CONDITIONAL(USE_CURL, false)
+AM_CONDITIONAL(USE_DASH, false)
 AM_CONDITIONAL(USE_DC1394, false)
 AM_CONDITIONAL(USE_DECKLINK, false)
 AM_CONDITIONAL(DECKLINK_OSX, false)
@@ -2220,6 +2205,7 @@ AM_CONDITIONAL(USE_WAYLAND, false)
 AM_CONDITIONAL(USE_MIR, false)
 #AM_CONDITIONAL(USE_MIR_ALLOC, false)
 AM_CONDITIONAL(USE_DIRAC, false)
+AM_CONDITIONAL(USE_DAALA, false)
 AM_CONDITIONAL(USE_DTS, false)
 AM_CONDITIONAL(USE_EXIF, false)
 AM_CONDITIONAL(USE_RESINDVD, false)
@@ -2242,7 +2228,6 @@ AM_CONDITIONAL(USE_MPEG2ENC, false)
 AM_CONDITIONAL(USE_MPG123, false)
 AM_CONDITIONAL(USE_MPLEX, false)
 AM_CONDITIONAL(USE_MUSEPACK, false)
-AM_CONDITIONAL(USE_MUSICBRAINZ, false)
 AM_CONDITIONAL(USE_MYTHTV, false)
 AM_CONDITIONAL(USE_NAS, false)
 AM_CONDITIONAL(USE_NEON, false)
@@ -2256,6 +2241,7 @@ AM_CONDITIONAL(USE_RSVG, false)
 AM_CONDITIONAL(USE_TIMIDITY, false)
 AM_CONDITIONAL(USE_WILDMIDI, false)
 AM_CONDITIONAL(USE_SDL, false)
+AM_CONDITIONAL(USE_SMOOTHSTREAMING, false)
 AM_CONDITIONAL(USE_SNDFILE, false)
 AM_CONDITIONAL(USE_SOUNDTOUCH, false)
 AM_CONDITIONAL(USE_SPANDSP, false)
@@ -2361,6 +2347,7 @@ gst/adpcmdec/Makefile
 gst/adpcmenc/Makefile
 gst/aiff/Makefile
 gst/asfmux/Makefile
+gst/audiofxbad/Makefile
 gst/audiovisualizers/Makefile
 gst/autoconvert/Makefile
 gst/bayer/Makefile
@@ -2398,7 +2385,6 @@ gst/mpegtsmux/tsmux/Makefile
 gst/mpegpsmux/Makefile
 gst/mve/Makefile
 gst/mxf/Makefile
-gst/nsf/Makefile
 gst/nuvdemux/Makefile
 gst/patchdetect/Makefile
 gst/pcapparse/Makefile
@@ -2429,14 +2415,16 @@ gst-libs/gst/egl/Makefile
 gst-libs/gst/mir/Makefile
 gst-libs/gst/insertbin/Makefile
 gst-libs/gst/interfaces/Makefile
-gst-libs/gst/signalprocessor/Makefile
 gst-libs/gst/codecparsers/Makefile
+gst-libs/gst/mpegts/Makefile
+gst-libs/gst/uridownloader/Makefile
 sys/Makefile
 sys/dshowdecwrapper/Makefile
 sys/acmenc/Makefile
 sys/acmmp3dec/Makefile
 sys/androidmedia/Makefile
 sys/applemedia/Makefile
+sys/applemedia-nonpublic/Makefile
 sys/avc/Makefile
 sys/bluez/Makefile
 sys/d3dvideosink/Makefile
@@ -2467,6 +2455,7 @@ tests/files/Makefile
 tests/examples/Makefile
 tests/examples/camerabin2/Makefile
 tests/examples/directfb/Makefile
+tests/examples/mpegts/Makefile
 tests/examples/mxf/Makefile
 tests/examples/opencv/Makefile
 tests/examples/uvch264/Makefile
@@ -2477,15 +2466,14 @@ ext/assrender/Makefile
 ext/apexsink/Makefile
 ext/bz2/Makefile
 ext/cdaudio/Makefile
-ext/celt/Makefile
 ext/chromaprint/Makefile
 ext/curl/Makefile
+ext/dash/Makefile
 ext/dc1394/Makefile
-ext/dirac/Makefile
 ext/directfb/Makefile
 ext/wayland/Makefile
 ext/mir/Makefile
-ext/miralloc/Makefile
+ext/daala/Makefile
 ext/dts/Makefile
 ext/eglgles/Makefile
 ext/faac/Makefile
@@ -2505,7 +2493,6 @@ ext/mpg123/Makefile
 ext/mimic/Makefile
 ext/mplex/Makefile
 ext/musepack/Makefile
-ext/musicbrainz/Makefile
 ext/mythtv/Makefile
 ext/nas/Makefile
 ext/neon/Makefile
@@ -2520,6 +2507,7 @@ ext/rtmp/Makefile
 ext/sbc/Makefile
 ext/schroedinger/Makefile
 ext/sdl/Makefile
+ext/smoothstreaming/Makefile
 ext/sndfile/Makefile
 ext/soundtouch/Makefile
 ext/spandsp/Makefile
