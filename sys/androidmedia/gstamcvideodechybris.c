@@ -801,12 +801,41 @@ gst_amc_video_dec_fill_buffer (GstAmcVideoDec * self, gint idx,
     if (gst_buffer_n_memory (outbuf) >= 1 &&
         (mem = gst_buffer_peek_memory (outbuf, 0))
         && gst_is_mir_image_memory (mem)) {
+#if 0
+      gint err = 0;
+#endif
+
       GST_DEBUG_OBJECT (self, "It is Mir image memory");
       GST_DEBUG_OBJECT (self, "mem: %p", mem);
-      GST_DEBUG_OBJECT (self, "codec_delegate: %p",
+      GST_DEBUG_OBJECT (self, "gst_mir_image_memory_get_codec: %p",
           self->codec->codec_delegate);
       gst_mir_image_memory_set_codec (mem, self->codec->codec_delegate);
       gst_mir_image_memory_set_buffer_index (mem, idx);
+
+#if 0
+      if (!self->codec->codec_delegate)
+        GST_ERROR_OBJECT (self,
+            "codec_delegate is NULL, rendering will not function");
+
+      GST_DEBUG_OBJECT (self, "mem: %p", mem);
+      GST_DEBUG_OBJECT (self, "gst_mir_image_memory_get_codec (mem): %p",
+          self->codec->codec_delegate);
+      GST_DEBUG_OBJECT (self, "gst_mir_image_memory_get_buffer_index (mem): %d",
+          gst_mir_image_memory_get_buffer_index (mem));
+      GST_DEBUG_OBJECT (self, "Rendering buffer: %d",
+          gst_mir_image_memory_get_buffer_index (mem));
+      GST_DEBUG_OBJECT (self, "Releasing output buffer index: %d",
+          gst_mir_image_memory_get_buffer_index (mem));
+
+      /* Render and release the output buffer back to the decoder */
+      err =
+          media_codec_release_output_buffer (self->codec->codec_delegate,
+          gst_mir_image_memory_get_buffer_index (mem));
+      if (err < 0)
+        GST_WARNING_OBJECT (self,
+            "Failed to release output buffer. Rendering will probably be affected (err: %d).",
+            err);
+#endif
     } else {
       GstMapInfo minfo;
 

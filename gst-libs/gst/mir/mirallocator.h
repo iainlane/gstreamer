@@ -40,7 +40,7 @@ typedef struct
 {
   GstMemory parent;
 
-  MediaCodecDelegate *codec_delegate;
+  MediaCodecDelegate codec_delegate;
   gsize buffer_index;
 
   gpointer user_data;
@@ -51,15 +51,15 @@ typedef struct
 gboolean gst_mir_image_memory_is_mappable (void);
 gboolean gst_is_mir_image_memory (GstMemory * mem);
 gsize gst_mir_image_memory_get_buffer_index (GstMemory * mem);
-MediaCodecDelegate *gst_mir_image_memory_get_codec (GstMemory * mem);
-void gst_mir_image_memory_set_codec (GstMemory * mem, MediaCodecDelegate *delegate);
+MediaCodecDelegate gst_mir_image_memory_get_codec (GstMemory * mem);
+void gst_mir_image_memory_set_codec (GstMemory * mem, MediaCodecDelegate delegate);
 void gst_mir_image_memory_set_buffer_index (GstMemory * mem, gsize index);
 
 /* Generic MirImage allocator that doesn't support mapping, copying or anything */
 GstAllocator *gst_mir_image_allocator_obtain (void);
 GstMemory *gst_mir_image_allocator_alloc (GstAllocator * allocator,
     gint width, gint height, gsize * size);
-GstMemory *gst_mir_image_allocator_wrap (GstAllocator * allocator,
+GstMemory *gst_mir_image_allocator_wrap (GstAllocator * allocator, MediaCodecDelegate delegate,
     gsize buffer_id, GstMemoryFlags flags, gsize size, gpointer user_data,
     GDestroyNotify user_data_destroy);
 

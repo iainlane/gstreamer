@@ -217,8 +217,8 @@ gst_mir_allocate_native_window_buffer (GstBufferPool * pool,
         buffer_id = 0;
 
         mem =
-            gst_mir_image_allocator_wrap (allocator, buffer_id, flags, size,
-            NULL, NULL);
+            gst_mir_image_allocator_wrap (allocator, m_pool->codec_delegate,
+            buffer_id, flags, size, NULL, NULL);
         if (mem == NULL)
           GST_WARNING_OBJECT (m_pool, "mem is NULL!");
       }
@@ -285,8 +285,10 @@ no_buffer:
 static void
 gst_mir_buffer_pool_release_buffer (GstBufferPool * pool, GstBuffer * buffer)
 {
+#if 1
   GstMemory *mem = { NULL };
   int err = 0;
+  MediaCodecDelegate delegate;
 
   /* Get access to the GstMemory stored in the GstBuffer */
   if (gst_buffer_n_memory (buffer) >= 1 &&
@@ -296,9 +298,14 @@ gst_mir_buffer_pool_release_buffer (GstBufferPool * pool, GstBuffer * buffer)
   } else
     GST_DEBUG_OBJECT (pool, "It is NOT Mir image memory");
 
+  delegate = gst_mir_image_memory_get_codec (mem);
+  if (!delegate) {
+    GST_WARNING_OBJECT (pool, "delegate is NULL, rendering will not function");
+    goto done;
+  }
+
   GST_DEBUG_OBJECT (pool, "mem: %p", mem);
-  GST_DEBUG_OBJECT (pool, "gst_mir_image_memory_get_codec (mem): %p",
-      gst_mir_image_memory_get_codec (mem));
+  GST_DEBUG_OBJECT (pool, "gst_mir_image_memory_get_codec (mem): %p", delegate);
   GST_DEBUG_OBJECT (pool, "gst_mir_image_memory_get_buffer_index (mem): %d",
       gst_mir_image_memory_get_buffer_index (mem));
   GST_DEBUG_OBJECT (pool, "Rendering buffer: %d",
@@ -308,13 +315,15 @@ gst_mir_buffer_pool_release_buffer (GstBufferPool * pool, GstBuffer * buffer)
 
   /* Render and release the output buffer back to the decoder */
   err =
-      media_codec_release_output_buffer (gst_mir_image_memory_get_codec (mem),
+      media_codec_release_output_buffer (delegate,
       gst_mir_image_memory_get_buffer_index (mem));
   if (err < 0)
     GST_WARNING_OBJECT (pool,
         "Failed to release output buffer. Rendering will probably be affected (err: %d).",
         err);
+#endif
 
+done:
   GST_BUFFER_POOL_CLASS (parent_class)->release_buffer (pool, buffer);
 }
 

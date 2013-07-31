@@ -104,15 +104,8 @@ static gboolean gst_mir_sink_render (GstBaseSink * bsink, GstBuffer * buffer);
 
 static struct display *create_display (void);
 static struct session *create_session (void);
-#if 0
-static void registry_handle_global (void *data, struct wl_registry *registry,
-    uint32_t id, const char *interface, uint32_t version);
-static void frame_redraw_callback (void *data,
-    struct wl_callback *callback, uint32_t time);
-#endif
 static void create_window (GstMirSink * sink, struct display *display,
     int width, int height);
-static void shm_pool_destroy (struct shm_pool *pool);
 
 static void
 gst_mir_sink_class_init (GstMirSinkClass * klass)
@@ -157,7 +150,6 @@ gst_mir_sink_init (GstMirSink * sink)
   sink->session = NULL;
   sink->display = NULL;
   sink->window = NULL;
-  sink->shm_pool = NULL;
   sink->pool = NULL;
 
   g_mutex_init (&sink->mir_lock);
@@ -198,19 +190,6 @@ gst_mir_sink_set_property (GObject * object,
 static void
 destroy_display (struct display *display)
 {
-#if 0
-  if (display->shm)
-    wl_shm_destroy (display->shm);
-
-  if (display->shell)
-    wl_shell_destroy (display->shell);
-
-  if (display->compositor)
-    wl_compositor_destroy (display->compositor);
-
-  wl_display_flush (display->display);
-  wl_display_disconnect (display->display);
-#endif
   free (display);
 }
 
@@ -219,12 +198,6 @@ destroy_session (struct session *session)
 {
   if (session->app_options)
     u_application_options_destroy (session->app_options);
-
-  //if (session->app_instance)
-  //u_application_instance_destroy(session->app_instance);
-
-  //if (session->app_lifecycle_delegate)
-  //u_application_lifecycle_delegate_destroy (session->app_lifecycle_delegate);
 
   if (session->app_description)
     u_application_description_destroy (session->app_description);
@@ -240,31 +213,8 @@ destroy_window (struct window *window)
 
   if (window->window)
     ua_ui_window_destroy (window->window);
-#if 0
-  if (window->callback)
-    wl_callback_destroy (window->callback);
-
-  if (window->buffer)
-    wl_buffer_destroy (window->buffer);
-
-  if (window->shell_surface)
-    wl_shell_surface_destroy (window->shell_surface);
-
-  if (window->surface)
-    wl_surface_destroy (window->surface);
-#endif
 
   free (window);
-}
-
-static void
-shm_pool_destroy (struct shm_pool *pool)
-{
-#if 0
-  munmap (pool->data, pool->size);
-  wl_shm_pool_destroy (pool->pool);
-  free (pool);
-#endif
 }
 
 static void
@@ -282,8 +232,6 @@ gst_mir_sink_finalize (GObject * object)
     destroy_display (sink->display);
   if (sink->session)
     destroy_session (sink->session);
-  if (sink->shm_pool)
-    shm_pool_destroy (sink->shm_pool);
 
   g_mutex_clear (&sink->mir_lock);
 
@@ -295,21 +243,11 @@ gst_mir_sink_get_caps (GstBaseSink * bsink, GstCaps * filter)
 {
   GstMirSink *sink;
   GstCaps *caps;
-  //GstCaps *caps1;
 
   sink = GST_MIR_SINK (bsink);
 
   GST_DEBUG_OBJECT (sink, "%s", __PRETTY_FUNCTION__);
 
-#if 0
-  caps1 = gst_caps_new_simple ("video/x-raw",
-      "surface_texture_client_ubuntu", G_TYPE_POINTER,
-      sink->surface_texture_client, NULL);
-
-  caps =
-      gst_caps_merge (gst_pad_get_pad_template_caps (GST_VIDEO_SINK_PAD (sink)),
-      caps1);
-#endif
   caps = gst_pad_get_pad_template_caps (GST_VIDEO_SINK_PAD (sink));
   if (filter) {
     GstCaps *intersection;
@@ -321,41 +259,6 @@ gst_mir_sink_get_caps (GstBaseSink * bsink, GstCaps * filter)
   }
   return caps;
 }
-
-#if 0
-static void
-shm_format (void *data, struct wl_shm *wl_shm, uint32_t format)
-{
-  struct display *d = data;
-
-  d->formats |= (1 << format);
-}
-
-struct wl_shm_listener shm_listenter = {
-  shm_format
-};
-
-static void
-registry_handle_global (void *data, struct wl_registry *registry,
-    uint32_t id, const char *interface, uint32_t version)
-{
-  struct display *d = data;
-
-  if (strcmp (interface, "wl_compositor") == 0) {
-    d->compositor =
-        wl_registry_bind (registry, id, &wl_compositor_interface, 1);
-  } else if (strcmp (interface, "wl_shell") == 0) {
-    d->shell = wl_registry_bind (registry, id, &wl_shell_interface, 1);
-  } else if (strcmp (interface, "wl_shm") == 0) {
-    d->shm = wl_registry_bind (registry, id, &wl_shm_interface, 1);
-    wl_shm_add_listener (d->shm, &shm_listenter, d);
-  }
-}
-
-static const struct wl_registry_listener registry_listener = {
-  registry_handle_global
-};
-#endif
 
 static struct display *
 create_display (void)
@@ -373,33 +276,6 @@ create_display (void)
   display->width = ua_ui_display_query_horizontal_res (display->display);
 
   GST_DEBUG ("Display resolution: (%d,%d)\n", display->height, display->width);
-
-#if 0
-  display->display = wl_display_connect (NULL);
-
-  if (display->display == NULL) {
-    free (display);
-    return NULL;
-  }
-
-  display->registry = wl_display_get_registry (display->display);
-  wl_registry_add_listener (display->registry, &registry_listener, display);
-
-  wl_display_roundtrip (display->display);
-  if (display->shm == NULL) {
-    GST_ERROR ("No wl_shm global..");
-    return NULL;
-  }
-
-  wl_display_roundtrip (display->display);
-
-  if (!(display->formats & (1 << WL_SHM_FORMAT_XRGB8888))) {
-    GST_ERROR ("WL_SHM_FORMAT_XRGB32 not available");
-    return NULL;
-  }
-
-  wl_display_get_fd (display->display);
-#endif
 
   return display;
 }
