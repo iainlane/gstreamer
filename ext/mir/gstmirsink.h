@@ -76,12 +76,6 @@ struct display
 {
   UAUiDisplay *display;
   int width, height;
-#if 0
-  struct wl_registry *registry;
-  struct wl_compositor *compositor;
-  struct wl_shell *shell;
-  struct wl_shm *shm;
-#endif
   uint32_t formats;
 };
 
@@ -92,13 +86,6 @@ struct window
   UAUiWindow *window;
   UAUiWindowProperties *properties;
   EGLNativeWindowType egl_native_window;
-#if 0
-  struct wl_surface *surface;
-  struct wl_shell_surface *shell_surface;
-  struct wl_buffer *buffer;
-  struct wl_callback *callback;
-  guint redraw_pending :1;
-#endif
 };
 
 struct shm_pool {
@@ -122,7 +109,6 @@ struct _GstMirSink
   struct session *session;
   struct display *display;
   struct window *window;
-  struct shm_pool *shm_pool;
 
   GstBufferPool *pool;
 

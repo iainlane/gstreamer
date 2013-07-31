@@ -55,7 +55,7 @@ gst_mir_image_memory_get_buffer_index (GstMemory * mem)
   return GST_MIR_IMAGE_MEMORY (mem)->buffer_index;
 }
 
-MediaCodecDelegate *
+MediaCodecDelegate
 gst_mir_image_memory_get_codec (GstMemory * mem)
 {
   g_return_val_if_fail (gst_is_mir_image_memory (mem), 0);
@@ -67,7 +67,7 @@ gst_mir_image_memory_get_codec (GstMemory * mem)
 }
 
 void
-gst_mir_image_memory_set_codec (GstMemory * mem, MediaCodecDelegate * delegate)
+gst_mir_image_memory_set_codec (GstMemory * mem, MediaCodecDelegate delegate)
 {
   g_return_if_fail (gst_is_mir_image_memory (mem));
   g_return_if_fail (delegate != NULL);
@@ -233,36 +233,26 @@ gst_mir_image_allocator_alloc (GstAllocator * allocator,
 
 GstMemory *
 gst_mir_image_allocator_wrap (GstAllocator * allocator,
-    gsize buffer_id, GstMemoryFlags flags, gsize size, gpointer user_data,
-    GDestroyNotify user_data_destroy)
+    MediaCodecDelegate delegate, gsize buffer_id, GstMemoryFlags flags,
+    gsize size, gpointer user_data, GDestroyNotify user_data_destroy)
 {
   GstMirImageMemory *mem;
-  //GstMemory *mem;
 
   GST_WARNING ("%s", __PRETTY_FUNCTION__);
 
   if (!allocator) {
     allocator = gst_mir_image_allocator_obtain ();
   }
-#if 0
-  mem = (GstMirImageMemory *)
-      gst_allocator_alloc (gst_mir_image_allocator_obtain (), size, NULL);
-  //mem->native_window_buffer = buffer;
-  mem->user_data = user_data;
-  mem->user_data_destroy = user_data_destroy;
-  GST_DEBUG ("mem->user_data_destroy: %p", mem->user_data_destroy);
-#else
   mem = g_slice_new (GstMirImageMemory);
   // FIXME: calling gst_mir_image_allocator_obtain() is a hack to select my allocator, this really
   // should be selected automatically by the decoder. This selection is not working correctly yet.
   gst_memory_init (GST_MEMORY_CAST (mem), flags,
       gst_mir_image_allocator_obtain (), NULL, size, 0, 0, size);
 
+  mem->codec_delegate = delegate;
   mem->buffer_index = buffer_id;
   mem->user_data = user_data;
   mem->user_data_destroy = user_data_destroy;
-  GST_DEBUG ("mem->user_data_destroy: %p", mem->user_data_destroy);
-#endif
 
   return GST_MEMORY_CAST (mem);
 }
