@@ -2202,13 +2202,9 @@ AM_CONDITIONAL(USE_DECKLINK, false)
 AM_CONDITIONAL(DECKLINK_OSX, false)
 AM_CONDITIONAL(USE_DIRECTFB, false)
 AM_CONDITIONAL(USE_WAYLAND, false)
-<<<<<<< HEAD
 AM_CONDITIONAL(USE_DAALA, false)
-=======
 AM_CONDITIONAL(USE_MIR, false)
-#AM_CONDITIONAL(USE_MIR_ALLOC, false)
 AM_CONDITIONAL(USE_DIRAC, false)
->>>>>>> Provides a hardware video decoder and zero-copy rendering solution for the Ubuntu Touch platform. This is the initial commit.
 AM_CONDITIONAL(USE_DTS, false)
 AM_CONDITIONAL(USE_EXIF, false)
 AM_CONDITIONAL(USE_RESINDVD, false)
@@ -2475,12 +2471,8 @@ ext/dash/Makefile
 ext/dc1394/Makefile
 ext/directfb/Makefile
 ext/wayland/Makefile
-<<<<<<< HEAD
 ext/daala/Makefile
-=======
 ext/mir/Makefile
-ext/miralloc/Makefile
->>>>>>> Provides a hardware video decoder and zero-copy rendering solution for the Ubuntu Touch platform. This is the initial commit.
 ext/dts/Makefile
 ext/eglgles/Makefile
 ext/faac/Makefile
