@@ -46,6 +46,8 @@
 
 #include <hybris/media/surface_texture_client_hybris.h>
 
+//#include <mir-client.h>
+
 #define GST_TYPE_MIR_SINK \
         (gst_mir_sink_get_type())
 #define GST_MIR_SINK(obj) \

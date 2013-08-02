@@ -1245,7 +1245,7 @@ AG_GST_CHECK_FEATURE(MIR, [mir sink], mir , [
 ])
 
 dnl **** libgstmir ****
-AM_CONDITIONAL(HAVE_MIR_ALLOC, test x"$HAVE_MIR_ALLOC" = x"yes")
+AM_CONDITIONAL(HAVE_MIR_ALLOC, test x"$HAVE_MIR" = x"yes")
 
 dnl **** Dirac ****
 translit(dnm, m, l) AM_CONDITIONAL(USE_DIRAC, true)
