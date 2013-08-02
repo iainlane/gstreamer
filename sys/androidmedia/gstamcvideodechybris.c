@@ -36,7 +36,7 @@
 #include <string.h>
 
 #include <gst/mir/mirallocator.h>
-#include <mirpool.h>
+#include <ext/mir/mirpool.h>
 
 #include <stdio.h>
 
