@@ -19,11 +19,13 @@ noinst_HEADERS = \
 	gstamcvideodec.h
 
 libgstandroidmedia_la_CFLAGS = \
+	$(GST_PLUGINS_BAD_CFLAGS) \
 	$(GST_PLUGINS_BASE_CFLAGS) \
 	$(GST_BASE_CFLAGS) \
 	$(GST_CFLAGS) \
 	$(ORC_CFLAGS)
 libgstandroidmedia_la_LIBADD = \
+	$(GST_PLUGINS_BAD_LIBS) \
 	$(GST_PLUGINS_BASE_LIBS) \
 	-lgstaudio-@GST_API_VERSION@ \
 	-lgstpbutils-@GST_API_VERSION@ \
