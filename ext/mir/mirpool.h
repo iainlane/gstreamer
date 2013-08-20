@@ -24,8 +24,8 @@
 G_BEGIN_DECLS
 
 #include "gstmirsink.h"
-#include <media_codec_layer.h>
-#include <surface_texture_client_ubuntu.h>
+#include <hybris/media/media_codec_layer.h>
+#include <hybris/media/surface_texture_client_hybris.h>
 typedef struct _GstMirMeta GstMirMeta;
 
 typedef struct _GstMirBufferPool GstMirBufferPool;

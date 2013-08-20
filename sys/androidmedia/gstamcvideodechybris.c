@@ -501,6 +501,10 @@ gst_amc_video_dec_init (GstAmcVideoDec * self)
 
   g_mutex_init (&self->drain_lock);
   g_cond_init (&self->drain_cond);
+
+  self->dec_format = NULL;
+  self->configured = FALSE;
+  self->alloc_query = NULL;
 }
 
 static gboolean
@@ -545,6 +549,10 @@ static void
 gst_amc_video_dec_finalize (GObject * object)
 {
   GstAmcVideoDec *self = GST_AMC_VIDEO_DEC (object);
+
+  self->configured = FALSE;
+  gst_amc_format_free (self->dec_format);
+  gst_object_unref (self->alloc_query);
 
   g_mutex_clear (&self->drain_lock);
   g_cond_clear (&self->drain_cond);
@@ -777,12 +785,13 @@ static gboolean
 gst_amc_video_dec_fill_buffer (GstAmcVideoDec * self, gint idx,
     const GstAmcBufferInfo * buffer_info, GstBuffer * outbuf)
 {
-  GstAmcVideoDecClass *klass = GST_AMC_VIDEO_DEC_GET_CLASS (self);
+  //GstAmcVideoDecClass *klass = GST_AMC_VIDEO_DEC_GET_CLASS (self);
   GstAmcBuffer *buf = &self->output_buffers[idx];
   GstVideoCodecState *state =
       gst_video_decoder_get_output_state (GST_VIDEO_DECODER (self));
-  GstVideoInfo *info = &state->info;
+  //GstVideoInfo *info = &state->info;
   gboolean ret = FALSE;
+  GstMemory *mem = { NULL };
 
   GST_DEBUG_OBJECT (self, "%s", __PRETTY_FUNCTION__);
 
@@ -792,9 +801,14 @@ gst_amc_video_dec_fill_buffer (GstAmcVideoDec * self, gint idx,
     goto done;
   }
 
+  GST_DEBUG_OBJECT (self,
+      "buffer_info->size: %d, gst_buffer_get_size (outbuf): %d",
+      buffer_info->size, gst_buffer_get_size (outbuf));
   /* Same video format */
+#if 0
   if (buffer_info->size == gst_buffer_get_size (outbuf)) {
     GstMemory *mem = { NULL };
+#endif
 
     GST_DEBUG_OBJECT (self, "Buffer sizes equal, not doing a copy");
 
@@ -846,8 +860,11 @@ gst_amc_video_dec_fill_buffer (GstAmcVideoDec * self, gint idx,
     }
     ret = TRUE;
     goto done;
+#if 0
   }
+#endif
 
+#if 0
   GST_DEBUG_OBJECT (self,
       "Sizes not equal (%d vs %d), doing slow line-by-line copying",
       buffer_info->size, gst_buffer_get_size (outbuf));
@@ -1020,10 +1037,93 @@ gst_amc_video_dec_fill_buffer (GstAmcVideoDec * self, gint idx,
       goto done;
       break;
   }
+#endif
 
 done:
   gst_video_codec_state_unref (state);
   return ret;
+}
+
+static gboolean
+gst_amc_video_dec_configure_self (GstAmcVideoDec * self, GstQuery * query)
+{
+  //GstVideoDecoderClass *klass;
+  //GstVideoDecoder *decoder;
+  //GstBufferPool *pool;
+  //GstMirBufferPool *m_pool;
+  //gboolean ret = FALSE;
+
+  //decoder = &self->parent;
+  //klass = GST_VIDEO_DECODER_GET_CLASS (decoder);
+
+  GST_DEBUG_OBJECT (self,
+      "NOT doing an early ALLOCATION query to get the SurfaceTextureClientHybris instance");
+#if 0
+  GST_DEBUG_OBJECT (self,
+      "Doing an early ALLOCATION query to get the SurfaceTextureClientHybris instance");
+  if (!gst_pad_peer_query (decoder->srcpad, query)) {
+    GST_WARNING_OBJECT (decoder, "didn't get downstream ALLOCATION hints");
+  }
+#endif
+
+#if 0
+  g_assert (klass->decide_allocation != NULL);
+  ret = klass->decide_allocation (decoder, query);
+  if (!ret)
+    goto no_decide_allocation;
+#endif
+
+#if 0
+  gst_query_parse_nth_allocation_pool (query, 0, &pool, NULL, NULL, NULL);
+  m_pool = GST_MIR_BUFFER_POOL_CAST (pool);
+  g_assert (m_pool != NULL);
+
+  GST_DEBUG_OBJECT (self, "SurfaceTextureClientHybris: %p",
+      m_pool->surface_texture_client);
+#endif
+
+  /* Configure the hardware decoder */
+  if (!gst_amc_codec_configure (self->codec, self->dec_format, NULL, 0)) {
+    //m_pool->surface_texture_client, 0)) {
+    GST_ERROR_OBJECT (self, "Failed to configure codec");
+    return FALSE;
+  }
+  //self->configured = TRUE;
+
+  GST_DEBUG_OBJECT (self, "Successfully configured codec with format");
+
+  if (!gst_amc_codec_start (self->codec)) {
+    GST_ERROR_OBJECT (self, "Failed to start codec");
+    return FALSE;
+  }
+
+  if (self->input_buffers)
+    gst_amc_codec_free_buffers (self->input_buffers, self->n_input_buffers);
+  self->input_buffers =
+      gst_amc_codec_get_input_buffers (self->codec, &self->n_input_buffers);
+  if (!self->input_buffers) {
+    GST_ERROR_OBJECT (self, "Failed to get input buffers");
+    return FALSE;
+  }
+  // JH added
+  if (self->output_buffers)
+    gst_amc_codec_free_buffers (self->output_buffers, self->n_output_buffers);
+  self->output_buffers =
+      gst_amc_codec_get_output_buffers (self->codec, &self->n_output_buffers);
+  if (!self->output_buffers) {
+    GST_ERROR_OBJECT (self, "Failed to get output buffers");
+    return FALSE;
+  }
+//done:
+  return TRUE;
+
+#if 0
+no_decide_allocation:
+  {
+    GST_WARNING_OBJECT (decoder, "Failed to decide allocation");
+    goto done;
+  }
+#endif
 }
 
 static void
@@ -1038,6 +1138,14 @@ gst_amc_video_dec_loop (GstAmcVideoDec * self)
 
   GST_VIDEO_DECODER_STREAM_LOCK (self);
 
+#if 0
+  if (!self->configured) {
+    GST_DEBUG_OBJECT (self, "Configuring video decoder");
+    gst_amc_video_dec_configure_self (self);
+  }
+#endif
+
+
 retry:
   /*if (self->input_state_changed) {
      idx = INFO_OUTPUT_FORMAT_CHANGED;
@@ -1049,6 +1157,7 @@ retry:
   idx = gst_amc_codec_dequeue_output_buffer (self->codec, &buffer_info, 100000);
   GST_VIDEO_DECODER_STREAM_LOCK (self);
   /*} */
+
 
   GST_DEBUG_OBJECT (self, "Tried to dequeue output buffer (idx: %d)", idx);
   if (idx < 0) {
@@ -1088,6 +1197,42 @@ retry:
           gst_amc_format_free (format);
           goto format_error;
         }
+#if 0
+        if (!self->configured) {
+          gint ret = 0;
+          GstBufferPool *pool;
+          GstMirBufferPool *m_pool;
+
+#if 0
+          GST_DEBUG_OBJECT (self,
+              "Doing an early ALLOCATION query to get the SurfaceTextureClientHybris instance");
+          if (!gst_pad_peer_query (self->parent.srcpad, self->alloc_query)) {
+            GST_WARNING_OBJECT (self, "didn't get downstream ALLOCATION hints");
+          }
+#endif
+          pool = gst_video_decoder_get_buffer_pool (&self->parent);
+          m_pool = (GstMirBufferPool *) pool;
+          g_assert (m_pool != NULL);
+          /* Reconfigure */
+          ret =
+              gst_amc_codec_configure (self->codec, format,
+              m_pool->surface_texture_client, 0);
+          if (ret != 0) {
+            GST_ERROR_OBJECT (self, "gst_amc_codec_configure: %d", ret);
+          }
+#if 0
+          ret =
+              media_codec_set_surface_texture_client (self->codec->
+              codec_delegate, m_pool->surface_texture_client);
+          if (ret != 0) {
+            GST_ERROR_OBJECT (self,
+                "media_codec_set_surface_texture_client returned error: %d",
+                ret);
+          }
+#endif
+          self->configured = TRUE;
+        }
+#endif
         gst_amc_format_free (format);
 
         if (self->output_buffers)
@@ -1163,6 +1308,24 @@ retry:
         1);
     flow_ret = gst_pad_push (GST_VIDEO_DECODER_SRC_PAD (self), outbuf);
   } else if (buffer_info.size >= 0) {
+#if 0
+    if (!self->configured) {
+      gint ret = 0;
+      GstBufferPool *pool = gst_video_decoder_get_buffer_pool (&self->parent);
+      GstMirBufferPool *m_pool = (GstMirBufferPool *) pool;
+      g_assert (m_pool != NULL);
+
+      ret =
+          media_codec_set_surface_texture_client (self->codec->codec_delegate,
+          m_pool->surface_texture_client);
+      if (ret != 0) {
+        GST_ERROR_OBJECT (self,
+            "media_codec_set_surface_texture_client returned error: %d", ret);
+      }
+      self->configured = TRUE;
+    }
+#endif
+
     GST_DEBUG_OBJECT (self, "Should be allocating buffer from custom pool");
     /* Allocate buffer from the GstBufferPool */
     if ((flow_ret = gst_video_decoder_allocate_output_frame (GST_VIDEO_DECODER
@@ -1340,12 +1503,16 @@ gst_amc_video_dec_set_format (GstVideoDecoder * decoder,
     GstVideoCodecState * state)
 {
   GstAmcVideoDec *self;
+#if 0
   GstVideoDecoderClass *klass;
+#endif
   GstAmcFormat *format;
-  GstQuery *query;
+  //GstQuery *query;
   gboolean ret = TRUE;
+#if 0
   GstBufferPool *pool;
   GstMirBufferPool *m_pool;
+#endif
   const gchar *mime;
   gboolean is_format_change = FALSE;
   gboolean needs_disable = FALSE;
@@ -1354,7 +1521,9 @@ gst_amc_video_dec_set_format (GstVideoDecoder * decoder,
   gsize codec_data_size = 0;
 
   self = GST_AMC_VIDEO_DEC (decoder);
+#if 0
   klass = GST_VIDEO_DECODER_GET_CLASS (decoder);
+#endif
 
   GST_DEBUG_OBJECT (self, "Setting new caps %" GST_PTR_FORMAT, state->caps);
 
@@ -1446,6 +1615,8 @@ gst_amc_video_dec_set_format (GstVideoDecoder * decoder,
     GST_ERROR_OBJECT (self, "Failed to create video format");
     return FALSE;
   }
+  /* FIXME: New fix */
+  self->dec_format = format;
 
   /* FIXME: This buffer needs to be valid until the codec is stopped again */
   if (self->codec_data)
@@ -1459,57 +1630,16 @@ gst_amc_video_dec_set_format (GstVideoDecoder * decoder,
 */
 
   GST_DEBUG_OBJECT (self,
-      "Doing an early ALLOCATION query to get the SurfaceTextureClientHybris instance");
+      "Preparing an early ALLOCATION query to get the SurfaceTextureClientHybris instance");
   /* Do a manual ALLOCATION query earlier than normal to get the SurfaceTextureClientHybris
    * instance from the video sink. */
-  query = gst_query_new_allocation (state->caps, TRUE);
-  if (!gst_pad_peer_query (decoder->srcpad, query)) {
-    GST_WARNING_OBJECT (decoder, "didn't get downstream ALLOCATION hints");
-  }
+  //query = gst_query_new_allocation (state->caps, TRUE);
+  //self->alloc_query = gst_object_ref (query);
+  self->alloc_query = gst_query_new_allocation (state->caps, TRUE);
 
-  g_assert (klass->decide_allocation != NULL);
-  ret = klass->decide_allocation (decoder, query);
-  if (!ret)
-    goto no_decide_allocation;
-
-  gst_query_parse_nth_allocation_pool (query, 0, &pool, NULL, NULL, NULL);
-  m_pool = GST_MIR_BUFFER_POOL_CAST (pool);
-  g_assert (m_pool != NULL);
-
-  GST_DEBUG_OBJECT (self, "SurfaceTextureClientHybris: %p",
-      m_pool->surface_texture_client);
-
-  /* Configure the hardware decoder */
-  if (!gst_amc_codec_configure (self->codec, format,
-          m_pool->surface_texture_client, 0)) {
-    GST_ERROR_OBJECT (self, "Failed to configure codec");
-    return FALSE;
-  }
-
-  GST_DEBUG_OBJECT (self, "Successfully configured codec with format");
-
-  if (!gst_amc_codec_start (self->codec)) {
-    GST_ERROR_OBJECT (self, "Failed to start codec");
-    return FALSE;
-  }
-
-  if (self->input_buffers)
-    gst_amc_codec_free_buffers (self->input_buffers, self->n_input_buffers);
-  self->input_buffers =
-      gst_amc_codec_get_input_buffers (self->codec, &self->n_input_buffers);
-  if (!self->input_buffers) {
-    GST_ERROR_OBJECT (self, "Failed to get input buffers");
-    return FALSE;
-  }
-  // JH added
-  if (self->output_buffers)
-    gst_amc_codec_free_buffers (self->output_buffers, self->n_output_buffers);
-  self->output_buffers =
-      gst_amc_codec_get_output_buffers (self->codec, &self->n_output_buffers);
-  if (!self->output_buffers) {
-    GST_ERROR_OBJECT (self, "Failed to get output buffers");
-    return FALSE;
-  }
+  /* Configure the hardware codec with format */
+  ret = gst_amc_video_dec_configure_self (self, self->alloc_query);
+  GST_DEBUG_OBJECT (self, "gst_amc_video_dec_configure_self returned: %d", ret);
 
   gst_amc_format_free (format);
 
@@ -1523,17 +1653,10 @@ gst_amc_video_dec_set_format (GstVideoDecoder * decoder,
   gst_pad_start_task (GST_VIDEO_DECODER_SRC_PAD (self),
       (GstTaskFunction) gst_amc_video_dec_loop, decoder, NULL);
 
-done:
-  if (query)
-    gst_query_unref (query);
+  //if (query)
+  //gst_query_unref (query);
 
   return TRUE;
-
-no_decide_allocation:
-  {
-    GST_WARNING_OBJECT (decoder, "Failed to decide allocation");
-    goto done;
-  }
 }
 
 static gboolean
@@ -1835,17 +1958,16 @@ static gboolean
 gst_amc_video_dec_decide_allocation (GstVideoDecoder * bdec, GstQuery * query)
 {
   GstBufferPool *pool;
+  GstMirBufferPool *m_pool;
   GstStructure *config;
   GstCaps *caps;
   guint i, n;
-  const GstStructure *surface_texture_client_param;
-  SurfaceTextureClientHybris *stc;
+  //const GstStructure *surface_texture_client_param;
+  //SurfaceTextureClientHybris *stc;
   /* GstVideoInfo info; */
 
   GST_WARNING ("%s", __PRETTY_FUNCTION__);
-
-  if (!GST_VIDEO_DECODER_CLASS (parent_class)->decide_allocation (bdec, query))
-    return FALSE;
+  GST_DEBUG_OBJECT (bdec, "Deciding ALLOCATION params");
 
   /* Prefer a MirImage allocator if available */
   gst_query_parse_allocation (query, &caps, NULL);
@@ -1871,12 +1993,21 @@ gst_amc_video_dec_decide_allocation (GstVideoDecoder * bdec, GstQuery * query)
     }
   }
 
+  if (!GST_VIDEO_DECODER_CLASS (parent_class)->decide_allocation (bdec, query))
+    return FALSE;
+
   g_assert (gst_query_get_n_allocation_pools (query) > 0);
   gst_query_parse_nth_allocation_pool (query, 0, &pool, NULL, NULL, NULL);
   g_assert (pool != NULL);
 
+  /* Add the codec_delegate instance to the current pool */
+  m_pool = (GstMirBufferPool *) pool;
+  m_pool->codec_delegate = (GST_AMC_VIDEO_DEC (bdec))->codec->codec_delegate;
+
   config = gst_buffer_pool_get_config (pool);
   if (gst_query_find_allocation_meta (query, GST_VIDEO_META_API_TYPE, NULL)) {
+    GST_WARNING ("ALLOCATION query has GST_VIDEO_META_API_TYPE embedded");
+#if 0
     gst_query_parse_nth_allocation_meta (query, 0,
         &surface_texture_client_param);
     if (gst_structure_has_field (surface_texture_client_param,
@@ -1887,6 +2018,7 @@ gst_amc_video_dec_decide_allocation (GstVideoDecoder * bdec, GstQuery * query)
       GST_WARNING ("SurfaceTextureClientHybris: %p", stc);
       gst_query_remove_nth_allocation_meta (query, 0);
     }
+#endif
     gst_buffer_pool_config_add_option (config,
         GST_BUFFER_POOL_OPTION_VIDEO_META);
   }

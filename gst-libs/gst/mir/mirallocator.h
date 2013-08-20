@@ -27,8 +27,8 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include <media_codec_layer.h>
-#include <surface_texture_client_ubuntu.h>
+#include <hybris/media/media_codec_layer.h>
+#include <hybris/media/surface_texture_client_hybris.h>
 
 #define GST_MIR_IMAGE_MEMORY_TYPE "MirImage"
 

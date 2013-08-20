@@ -44,9 +44,7 @@
 #include <ubuntu/application/ui/display.h>
 #include <ubuntu/application/ui/session.h>
 
-#include <surface_texture_client_hybris.h>
-
-//#include <mir-client.h>
+#include <hybris/media/surface_texture_client_hybris.h>
 
 #define GST_TYPE_MIR_SINK \
         (gst_mir_sink_get_type())

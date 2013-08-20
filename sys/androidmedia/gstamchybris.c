@@ -36,9 +36,9 @@
 #include <gst/audio/audio.h>
 #include <string.h>
 
-#include <media_codec_layer.h>
-#include <media_codec_list.h>
-#include <media_format_layer.h>
+#include <hybris/media/media_codec_layer.h>
+#include <hybris/media/media_codec_list.h>
+#include <hybris/media/media_format_layer.h>
 
 #include <pthread.h>
 

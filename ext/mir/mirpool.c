@@ -24,6 +24,7 @@
 
 /* Object header */
 #include "gstmirsink.h"
+#include "mirpool.h"
 
 #include <gst/mir/mirallocator.h>
 
@@ -208,20 +209,30 @@ gst_mir_allocate_native_window_buffer (GstBufferPool * pool,
     case GST_VIDEO_FORMAT_Y42B:
     case GST_VIDEO_FORMAT_Y41B:{
 
-      GST_DEBUG_OBJECT (m_pool, "Allocating new Mir image");
+      GST_WARNING_OBJECT (m_pool,
+          "Allocating new Mir image, height: %d, width: %d, size: %d", height,
+          width, size);
+
+      /* A fallback to make sure we have a size */
+      if (size == 0)
+        size = height * width;
 
       stride = size / height;
       size = stride * height;
 
-      if (m_pool->sink->surface_texture_client) {
-        buffer_id = 0;
+      GST_WARNING_OBJECT (m_pool, "stride: %d, size: %d", stride, size);
 
-        mem =
-            gst_mir_image_allocator_wrap (allocator, m_pool->codec_delegate,
-            buffer_id, flags, size, NULL, NULL);
-        if (mem == NULL)
-          GST_WARNING_OBJECT (m_pool, "mem is NULL!");
-      }
+      //if (m_pool->sink->surface_texture_client) {
+      buffer_id = 0;
+
+      GST_WARNING_OBJECT (m_pool, "Allocating new buffer memory of size: %d",
+          size);
+      mem =
+          gst_mir_image_allocator_wrap (allocator, m_pool->codec_delegate,
+          buffer_id, flags, size, NULL, NULL);
+      if (mem == NULL)
+        GST_WARNING_OBJECT (m_pool, "mem is NULL!");
+      //}
 
       break;
     }
@@ -261,6 +272,9 @@ mir_buffer_pool_alloc (GstBufferPool * pool, GstBuffer ** buffer,
     GST_ERROR_OBJECT (m_pool, "Can't create buffer, couldn't get allocator");
     return GST_FLOW_ERROR;
   }
+
+  GST_WARNING_OBJECT (m_pool, "Height: %d, width: %d", m_pool->height,
+      m_pool->width);
 
   *buffer =
       gst_mir_allocate_native_window_buffer (pool, m_pool->allocator, params,
@@ -330,14 +344,15 @@ done:
 GstBufferPool *
 gst_mir_buffer_pool_new (GstMirSink * mirsink)
 {
-  GstMirBufferPool *pool;
+  GstMirBufferPool *m_pool;
+
+  GST_WARNING ("%s", __PRETTY_FUNCTION__);
 
   g_return_val_if_fail (GST_IS_MIR_SINK (mirsink), NULL);
-  pool = g_object_new (GST_TYPE_MIR_BUFFER_POOL, NULL);
-  GST_DEBUG_OBJECT (pool, "%s", __PRETTY_FUNCTION__);
-  pool->sink = gst_object_ref (mirsink);
+  m_pool = g_object_new (GST_TYPE_MIR_BUFFER_POOL, NULL);
+  m_pool->sink = gst_object_ref (mirsink);
 
-  return GST_BUFFER_POOL_CAST (pool);
+  return GST_BUFFER_POOL_CAST (m_pool);
 }
 
 void

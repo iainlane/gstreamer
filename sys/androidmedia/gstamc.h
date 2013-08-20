@@ -25,8 +25,9 @@
 #include <gst/video/video.h>
 #include <gst/audio/audio.h>
 #include <jni.h>
-#include <media_codec_layer.h>
-#include <media_format_layer.h>
+
+#include <hybris/media/media_codec_layer.h>
+#include <hybris/media/media_format_layer.h>
 
 G_BEGIN_DECLS
 

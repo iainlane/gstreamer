@@ -239,6 +239,8 @@ gst_mir_image_allocator_wrap (GstAllocator * allocator,
   GstMirImageMemory *mem;
 
   GST_WARNING ("%s", __PRETTY_FUNCTION__);
+  GST_WARNING ("size: %d", size);
+  GST_WARNING ("delegate: %p", delegate);
 
   if (!allocator) {
     allocator = gst_mir_image_allocator_obtain ();
